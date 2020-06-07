@@ -3,14 +3,9 @@ provider "azurerm" {
   features {}
 }
 
-provider "azuread" {
-}
-
 locals {
   prefix = "transcriptgen"
 }
-
-data "azurerm_client_config" "current" {}
 
 resource "azurerm_resource_group" "main" {
   name     = "${local.prefix}-rg"
@@ -42,15 +37,10 @@ resource "azurerm_storage_account" "main" {
   account_replication_type = "LRS"
   blob_properties {
     cors_rule {
-      # A list of headers that are allowed to be a part of the cross-origin request.
       allowed_headers = ["*"]
-      # A list of http headers that are allowed to be executed by the origin. Valid options are DELETE, GET, HEAD, MERGE, POST, OPTIONS, PUT or PATCH.
       allowed_methods = ["DELETE", "GET", "HEAD", "MERGE", "POST", "OPTIONS", "PUT", "PATCH"]
-      # A list of origin domains that will be allowed by CORS.
       allowed_origins = ["*"]
-      # A list of response headers that are exposed to CORS clients.
       exposed_headers = ["content-length"]
-      # The number of seconds the client should cache a preflight response.
       max_age_in_seconds = 200
     }
   }
@@ -102,55 +92,4 @@ resource "azurerm_function_app" "backend" {
     ]
   }
 
-}
-
-resource "azurerm_media_services_account" "main" {
-  name                = "${local.prefix}media"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  storage_account {
-    id         = azurerm_storage_account.main.id
-    is_primary = true
-  }
-}
-
-resource "azuread_application" "main" {
-  name = "${local.prefix}-ad"
-}
-
-resource "azuread_service_principal" "main" {
-  application_id = azuread_application.main.application_id
-}
-
-resource "random_password" "service_principal_main" {
-  length = 16
-}
-
-resource "azuread_service_principal_password" "main" {
-  service_principal_id = azuread_service_principal.main.id
-  value                = random_password.service_principal_main.result
-  end_date             = "2099-01-01T01:02:03Z"
-}
-
-resource "azurerm_role_definition" "media_read_assets" {
-  name  = "media-read-assets"
-  scope = azurerm_media_services_account.main.id
-  permissions {
-    actions = [
-      "Microsoft.Media/mediaServices/assets/write",
-      "Microsoft.Media/mediaServices/transforms/read",
-      "Microsoft.Media/mediaServices/transforms/write",
-      "Microsoft.Media/mediaServices/transforms/jobs/read",
-      "Microsoft.Media/mediaServices/transforms/jobs/write"
-    ]
-  }
-  assignable_scopes = [
-    azurerm_media_services_account.main.id
-  ]
-}
-
-resource "azurerm_role_assignment" "service_principal_media" {
-  scope              = azurerm_media_services_account.main.id
-  role_definition_id = azurerm_role_definition.media_read_assets.id
-  principal_id       = azuread_service_principal.main.object_id
 }
