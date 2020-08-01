@@ -7,6 +7,17 @@ locals {
   prefix = "transcriptgen"
 }
 
+variable "mediacreds" {
+  type = object({
+    ApplicationId          = string
+    ServicePrincipalSecret = string
+    TenantId               = string
+    SubscriptionId         = string
+    AccountName            = string
+    ResourceGroupName      = string
+  })
+}
+
 resource "azurerm_resource_group" "main" {
   name     = "${local.prefix}-rg"
   location = "West US"
@@ -66,7 +77,7 @@ resource "azurerm_function_app" "backend" {
   storage_account_name       = azurerm_storage_account.main.name
   storage_account_access_key = azurerm_storage_account.main.primary_access_key
   version                    = "~3"
-  app_settings = {
+  app_settings = merge(var.mediacreds, {
     StorageAccountName             = azurerm_storage_account.main.name
     StorageAccountKey              = azurerm_storage_account.main.primary_access_key
     APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.backend.instrumentation_key
@@ -75,13 +86,14 @@ resource "azurerm_function_app" "backend" {
     WEBSITE_NODE_DEFAULT_VERSION    = "~12"
     WEBSITE_ENABLE_SYNC_UPDATE_SITE = null
     WEBSITE_RUN_FROM_PACKAGE        = null
-  }
+  })
   site_config {
     cors {
       allowed_origins = [
-        "http://localhost:4200",
-        format("http://%s", azurerm_app_service.frontend.default_site_hostname),
-        format("https://%s", azurerm_app_service.frontend.default_site_hostname),
+        "*"
+        # "http://localhost:4200",
+        # format("http://%s", azurerm_app_service.frontend.default_site_hostname),
+        # format("https://%s", azurerm_app_service.frontend.default_site_hostname),
       ]
     }
   }
@@ -93,3 +105,4 @@ resource "azurerm_function_app" "backend" {
   }
 
 }
+
