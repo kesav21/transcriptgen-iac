@@ -48,10 +48,10 @@ resource "azurerm_storage_account" "main" {
   account_replication_type = "LRS"
   blob_properties {
     cors_rule {
-      allowed_headers = ["*"]
-      allowed_methods = ["DELETE", "GET", "HEAD", "MERGE", "POST", "OPTIONS", "PUT", "PATCH"]
-      allowed_origins = ["*"]
-      exposed_headers = ["content-length"]
+      allowed_headers    = ["*"]
+      allowed_methods    = ["DELETE", "GET", "HEAD", "MERGE", "POST", "OPTIONS", "PUT", "PATCH"]
+      allowed_origins    = ["*"]
+      exposed_headers    = ["content-length"]
       max_age_in_seconds = 200
     }
   }
